@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brewing Note</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">☕</span>
+        <span class="brand-name">Brewing Note</span>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="beans" role="tab">원두</button>
+        <button class="tab" data-tab="recipes" role="tab">레시피</button>
+        <button class="tab" data-tab="journal" role="tab">커피 일기</button>
+      </nav>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="backupBtn" title="백업 파일 저장">백업</button>
+        <label class="icon-btn" title="백업 파일 불러오기">불러오기
+          <input type="file" id="importInput" accept="application/json" hidden />
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 원두 -->
+    <section class="view active" id="view-beans">
+      <div class="view-head">
+        <div>
+          <h1>원두</h1>
+          <p class="sub">마셔본 원두와 그 특징을 정리해두세요.</p>
+        </div>
+        <div class="view-tools">
+          <input class="search" type="search" placeholder="로스터리, 원산지 검색" data-search="beans" />
+          <button class="btn primary" data-new="bean">+ 새 원두</button>
+        </div>
+      </div>
+      <div class="grid" id="beanList"></div>
+    </section>
+
+    <!-- 레시피 -->
+    <section class="view" id="view-recipes">
+      <div class="view-head">
+        <div>
+          <h1>레시피</h1>
+          <p class="sub">카드를 누르면 전체화면으로 크게 볼 수 있어요.</p>
+        </div>
+        <div class="view-tools">
+          <input class="search" type="search" placeholder="레시피, 드리퍼 검색" data-search="recipes" />
+          <button class="btn primary" data-new="recipe">+ 새 레시피</button>
+        </div>
+      </div>
+      <div class="grid" id="recipeList"></div>
+    </section>
+
+    <!-- 커피 일기 -->
+    <section class="view" id="view-journal">
+      <div class="view-head">
+        <div>
+          <h1>커피 일기</h1>
+          <p class="sub">오늘 내린 커피의 맛과 느낌을 남겨보세요.</p>
+        </div>
+        <div class="view-tools">
+          <input class="search" type="search" placeholder="원두, 컵노트 검색" data-search="journal" />
+          <button class="btn ghost" id="exportAllPdf">전체 PDF</button>
+          <button class="btn primary" data-new="journal">+ 새 기록</button>
+        </div>
+      </div>
+      <div class="grid" id="journalList"></div>
+    </section>
+  </main>
+
+  <!-- 원두 폼 -->
+  <dialog class="modal" id="beanDialog">
+    <form id="beanForm" class="form">
+      <div class="modal-head">
+        <h2 data-title>새 원두</h2>
+        <button type="button" class="close-btn" data-close>✕</button>
+      </div>
+      <div class="form-body">
+        <div class="row-2">
+          <label>로스터리 <input name="roastery" required placeholder="예: 커피리브레" /></label>
+          <label>원두명 <input name="name" placeholder="예: 에티오피아 구지 함벨라" /></label>
+        </div>
+        <fieldset>
+          <legend>원산지</legend>
+          <div class="pick">
+            <label>국가 <input name="country" list="countryList" autocomplete="off" placeholder="예: 에티오피아" /></label>
+            <div class="suggest" id="countrySuggest" aria-label="자주 쓰는 국가"></div>
+          </div>
+          <div class="pick">
+            <label>산지 <input name="region" list="regionList" autocomplete="off" placeholder="국가를 고르면 추천 산지가 떠요" /></label>
+            <div class="suggest" id="regionSuggest" aria-label="추천 산지"></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>품종 · 가공방식</legend>
+          <div class="row-2 top">
+            <div class="pick">
+              <label>품종 <input name="variety" list="varietyList" autocomplete="off" placeholder="예: 에어룸" /></label>
+              <div class="suggest" id="varietySuggest" aria-label="자주 쓰는 품종"></div>
+            </div>
+            <div class="pick">
+              <label>가공방식 <input name="process" list="processList" autocomplete="off" placeholder="예: 워시드" /></label>
+              <div class="suggest" id="processSuggest" aria-label="자주 쓰는 가공방식"></div>
+            </div>
+          </div>
+        </fieldset>
+        <datalist id="countryList"></datalist>
+        <datalist id="regionList"></datalist>
+        <fieldset>
+          <legend>로스팅 포인트</legend>
+          <div class="segmented" id="roastSeg"></div>
+        </fieldset>
+        <label>노트 <textarea name="notes" rows="3" placeholder="로스터리 컵노트, 구매처, 로스팅 날짜 등"></textarea></label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 레시피 폼 -->
+  <dialog class="modal" id="recipeDialog">
+    <form id="recipeForm" class="form">
+      <div class="modal-head">
+        <h2 data-title>새 레시피</h2>
+        <button type="button" class="close-btn" data-close>✕</button>
+      </div>
+      <div class="form-body">
+        <label>레시피 이름 <input name="title" required placeholder="예: 아침용 V60 3푸어" /></label>
+        <div class="row-2">
+          <label>원두 <select name="beanId" data-bean-select></select></label>
+          <label>드리퍼 <input name="dripper" list="dripperList" placeholder="예: V60 02" /></label>
+        </div>
+        <div class="row-3">
+          <label>원두양 (g) <input name="dose" type="number" step="0.1" min="0" inputmode="decimal" placeholder="15" /></label>
+          <label>물양 (g) <input name="water" type="number" step="1" min="0" inputmode="decimal" placeholder="240" /></label>
+          <label>비율 <output class="ratio-out" id="ratioOut">–</output></label>
+        </div>
+        <div class="row-2">
+          <label>추출 시간 <input name="time" placeholder="2:30" pattern="\d{1,2}:\d{2}|\d+" title="분:초 (예: 2:30)" /></label>
+          <label>물 온도 (°C) <input name="temp" type="number" step="0.5" inputmode="decimal" placeholder="93" /></label>
+        </div>
+        <fieldset>
+          <legend>분쇄도</legend>
+          <div class="row-2">
+            <label>그라인더 <input name="grinder" list="grinderList" placeholder="예: 코만단테" /></label>
+            <label>클릭 단위 <select name="clickStep"></select></label>
+          </div>
+          <div class="row-2">
+            <label>클릭 <input name="clicks" type="number" step="1" min="0" inputmode="decimal" placeholder="24" /></label>
+            <label>μm / 1클릭 <input name="umPerClick" type="number" step="0.1" min="0" inputmode="decimal" placeholder="자동" /></label>
+          </div>
+          <div class="label">Micron (μm)
+            <div class="range-in">
+              <input name="umMin" type="number" step="1" min="0" inputmode="numeric" placeholder="600" aria-label="최소 μm" />
+              <span>~</span>
+              <input name="umMax" type="number" step="1" min="0" inputmode="numeric" placeholder="800" aria-label="최대 μm" />
+              <span>μm</span>
+            </div>
+          </div>
+          <p class="grind-hint" id="grindHint"></p>
+        </fieldset>
+        <fieldset>
+          <legend>푸어 단계 <span class="hint">선택</span></legend>
+          <div id="stepRows" class="step-rows"></div>
+          <button type="button" class="btn ghost small" id="addStep">+ 단계 추가</button>
+        </fieldset>
+        <label>메모 <textarea name="memo" rows="2" placeholder="교반, 린싱, 팁 등"></textarea></label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 일기 폼 -->
+  <dialog class="modal" id="journalDialog">
+    <form id="journalForm" class="form">
+      <div class="modal-head">
+        <h2 data-title>새 기록</h2>
+        <button type="button" class="close-btn" data-close>✕</button>
+      </div>
+      <div class="form-body">
+        <div class="row-2">
+          <label>날짜 <input name="date" type="date" required /></label>
+          <div class="label">총평
+            <div class="stars-input" id="ratingInput"></div>
+          </div>
+        </div>
+        <div class="row-2">
+          <label>레시피 <select name="recipeId" data-recipe-select></select></label>
+          <label>원두 <select name="beanId" data-bean-select></select></label>
+        </div>
+        <fieldset>
+          <legend>맛</legend>
+          <div class="taste-inputs" id="tasteInputs"></div>
+        </fieldset>
+        <fieldset>
+          <legend>컵노트</legend>
+          <div class="wheel-wrap" id="flavorWheel"></div>
+          <p class="grind-hint wheel-hint">휠에서 맛을 누르면 추가되고, 다시 누르면 빠져요. 휠에 없는 맛은 색을 골라 직접 입력하세요.</p>
+          <div class="swatches" id="swatches"></div>
+          <div class="note-add">
+            <input id="noteText" placeholder="색을 고르고 컵노트 입력 (예: 자몽)" />
+            <button type="button" class="btn small" id="addNote">추가</button>
+          </div>
+          <div class="chips" id="noteChips"></div>
+        </fieldset>
+        <label>특징 <textarea name="feature" rows="2" placeholder="이 커피만의 인상, 질감, 식으면서의 변화"></textarea></label>
+        <label>피드백 <textarea name="feedback" rows="2" placeholder="다음에는 이렇게 바꿔보기"></textarea></label>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn ghost" data-close>취소</button>
+        <button type="submit" class="btn primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 일기 상세 -->
+  <dialog class="modal wide" id="detailDialog">
+    <div class="modal-head">
+      <h2>커피 일기</h2>
+      <button type="button" class="close-btn" data-close>✕</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+    <div class="modal-foot spread">
+      <div class="foot-group">
+        <button class="btn ghost danger" id="detailDelete">삭제</button>
+        <button class="btn ghost" id="detailEdit">수정</button>
+      </div>
+      <div class="foot-group">
+        <button class="btn ghost" id="detailPng">사진 저장</button>
+        <button class="btn primary" id="detailPdf">PDF 저장</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- 레시피 전체화면 -->
+  <div class="recipe-view" id="recipeView" hidden>
+    <div class="rv-bar">
+      <button class="rv-btn" id="rvClose">← 닫기</button>
+      <div class="rv-bar-right">
+        <button class="rv-btn" id="rvJournal">이 레시피로 기록</button>
+        <button class="rv-btn" id="rvEdit">수정</button>
+        <button class="rv-btn" id="rvDelete">삭제</button>
+        <button class="rv-btn" id="rvFull">⛶ 전체화면</button>
+      </div>
+    </div>
+    <div class="rv-content" id="rvContent"></div>
+  </div>
+
+  <div class="export-stage" id="exportStage" aria-hidden="true"></div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <datalist id="processList">
+    <option value="워시드"></option><option value="내추럴"></option><option value="허니"></option>
+    <option value="무산소 발효"></option><option value="카보닉 매서레이션"></option>
+    <option value="세미 워시드"></option><option value="웻 헐드"></option>
+  </datalist>
+  <datalist id="varietyList">
+    <option value="에어룸"></option><option value="게이샤"></option><option value="버번"></option>
+    <option value="카투라"></option><option value="SL28"></option><option value="SL34"></option>
+    <option value="티피카"></option><option value="파카마라"></option><option value="74110"></option>
+  </datalist>
+  <datalist id="dripperList">
+    <option value="V60 02"></option><option value="칼리타 웨이브 185"></option><option value="오리가미"></option>
+    <option value="케멕스"></option><option value="에어로프레스"></option><option value="클레버"></option>
+    <option value="스위치"></option><option value="오레아"></option>
+  </datalist>
+  <datalist id="grinderList">
+    <option value="코만단테 C40"></option><option value="1Zpresso K-Ultra"></option><option value="1Zpresso ZP6"></option>
+    <option value="타임모어 C3"></option><option value="EK43"></option><option value="바라짜 엔코어"></option>
+    <option value="펠로우 오드"></option><option value="킨우 M47"></option>
+  </datalist>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
